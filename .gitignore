@@ -1,6 +1,7 @@
 # Customize
-data/fedglue1
+data/fedglue
 pretrain/
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
