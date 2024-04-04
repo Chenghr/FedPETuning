@@ -1,3 +1,7 @@
+# Customize
+data/fedglue1
+pretrain/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
