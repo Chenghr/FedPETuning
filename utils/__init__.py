@@ -23,6 +23,12 @@ from utils.config import build_config
 from utils.register import registry
 # from utils.transform import ss_tokenize, ms_tokenize
 
+"""
+    __all__ 是一个特殊的 Python 变量，用于定义一个模块的公共接口。
+    当在一个模块中定义了 __all__ 变量时，它将指定在使用通配符导入语句 from module import * 时，
+    应该导出哪些符号名称。换句话说，它控制了在导入模块时哪些符号会被暴露给外部使用。
+"""
+
 __all__ = [
     "get_cpus",
     "init_training_device",

@@ -4,28 +4,31 @@ import numpy as np
 """
 This code snippets come from https://github.com/FedML-AI/FedNLP/blob/master/data/advanced_partition/niid_label.py
 """
+
 def dynamic_batch_fill(label_index_tracker, label_index_matrix,
                        remaining_length, current_label_id):
     """
-    params
+    动态批量填充函数
+
+    参数:
     ------------------------------------------------------------------------
-    label_index_tracker : 1d numpy array track how many data each label has used
-    label_index_matrix : 2d array list of indexs of each label
-    remaining_length : int remaining empty space in current partition client list
-    current_label_id : int current round label id
+    label_index_tracker : 1d numpy array，跟踪每个标签使用了多少数据
+    label_index_matrix : 2d array，每个标签的索引列表
+    remaining_length : int，当前分区客户端列表中剩余的空间
+    current_label_id : int，当前轮的标签ID
     ------------------------------------------------------------------------
 
-    return
+    返回:
     ---------------------------------------------------------
-    label_index_offset: dict  dictionary key is label id
-    and value is the offset associated with this key
+    label_index_offset: dict，字典的键是标签ID，值是与该键关联的偏移量
     ----------------------------------------------------------
     """
     remaining_unfiled = remaining_length
     label_index_offset = {}
     label_remain_length_dict = {}
     total_label_remain_length = 0
-    # calculate total number of all the remaing labels and each label's remaining length
+
+    # 计算所有剩余标签的总数以及每个标签的剩余长度
     for label_id, label_list in enumerate(label_index_matrix):
         if label_id == current_label_id:
             label_remain_length_dict[label_id] = 0
@@ -40,6 +43,7 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
     length_pointer = remaining_unfiled
 
     if total_label_remain_length > 0:
+        # 根据剩余长度对标签进行排序
         label_sorted_by_length = {
             k: v
             for k, v in sorted(label_remain_length_dict.items(),
@@ -48,13 +52,14 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
     else:
         label_index_offset = label_remain_length_dict
         return label_index_offset
-    # for each label calculate the offset move forward by distribution of remaining labels
+    
+    # 对每个标签计算偏移量，按照剩余标签的分布将其向前移动
     for label_id in label_sorted_by_length.keys():
         fill_count = math.ceil(label_remain_length_dict[label_id] /
                                total_label_remain_length * remaining_length)
         fill_count = min(fill_count, label_remain_length_dict[label_id])
         offset_forward = fill_count
-        # if left room not enough for all offset set it to 0
+        # 如果剩余的空间不足以容纳所有的偏移量，则将其设置为0
         if length_pointer - offset_forward <= 0 and length_pointer > 0:
             label_index_offset[label_id] = length_pointer
             length_pointer = 0
@@ -64,10 +69,9 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
             label_remain_length_dict[label_id] -= offset_forward
         label_index_offset[label_id] = offset_forward
 
-    # still has some room unfilled
+    # 如果还有未填充的空间
     if length_pointer > 0:
         for label_id in label_sorted_by_length.keys():
-            # make sure no infinite loop happens
             fill_count = math.ceil(label_sorted_by_length[label_id] /
                                    total_label_remain_length * length_pointer)
             fill_count = min(fill_count, label_remain_length_dict[label_id])
@@ -87,41 +91,40 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
 def label_skew_process(label_vocab, label_assignment, client_num, alpha,
                        data_length):
     """
-    params
+    标签倾斜处理函数
+
+    参数:
     -------------------------------------------------------------------
-    label_vocab : dict label vocabulary of the dataset
-    label_assignment : 1d list a list of label, the index of list is the index associated to label
-    client_num : int number of clients
-    alpha : float similarity of each client, the larger the alpha the similar data for each client
+    label_vocab : dict，数据集的标签词汇表
+    label_assignment : 1d list，标签列表，列表的索引与标签关联
+    client_num : int，客户端数量
+    alpha : float，每个客户端的相似性，alpha越大，每个客户端的数据越相似
+    data_length : int，数据长度
     -------------------------------------------------------------------
-    return
+    返回:
     ------------------------------------------------------------------
-    partition_result : 2d array list of partition index of each client
+    partition_result : 2d array，每个客户端的分区索引列表
     ------------------------------------------------------------------
     """
     label_index_matrix = [[] for _ in label_vocab]
     label_proportion = []
     partition_result = [[] for _ in range(client_num)]
     client_length = 0
-    print("client_num", client_num)
-    # shuffle indexs and calculate each label proportion of the dataset
+
+    # 打乱索引并计算每个标签在数据集中的比例
     for index, value in enumerate(label_vocab):
         label_location = np.where(label_assignment == value)[0]
         label_proportion.append(len(label_location) / data_length)
         np.random.shuffle(label_location)
         label_index_matrix[index].extend(label_location[:])
-    print(label_proportion)
-    # calculate size for each partition client
+
+    # 计算每个分区客户端的大小
     label_index_tracker = np.zeros(len(label_vocab), dtype=int)
     total_index = data_length
     each_client_index_length = int(total_index / client_num)
-    print("each index length", each_client_index_length)
     client_dir_dis = np.array([alpha * l for l in label_proportion])
-    print("alpha", alpha)
-    print("client dir dis", client_dir_dis)
-    proportions = np.random.dirichlet(client_dir_dis)
-    print("dir distribution", proportions)
-    # add all the unused data to the client
+
+    # 对于每个客户端计算分配给它的每个标签的长度
     for client_id in range(len(partition_result)):
         each_client_partition_result = partition_result[client_id]
         proportions = np.random.dirichlet(client_dir_dis)
@@ -130,7 +133,7 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
             client_length = total_index
         total_index -= client_length
         client_length_pointer = client_length
-        # for each label calculate the offset length assigned to by Dir distribution and then extend assignment
+        
         for label_id, _ in enumerate(label_vocab):
             offset = round(proportions[label_id] * client_length)
             if offset >= client_length_pointer:
@@ -144,7 +147,7 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
             start = int(label_index_tracker[label_id])
             end = int(label_index_tracker[label_id] + offset)
             label_data_length = len(label_index_matrix[label_id])
-            # if the the label is assigned to a offset length that is more than what its remaining length
+
             if end > label_data_length:
                 each_client_partition_result.extend(
                     label_index_matrix[label_id][start:])
@@ -167,14 +170,10 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
                 label_index_tracker[
                     label_id] = label_index_tracker[label_id] + offset
 
-        # if last client still has empty rooms, fill empty rooms with the rest of the unused data
         if client_id == len(partition_result) - 1:
-            print("last id length", len(each_client_partition_result))
-            print("Last client fill the rest of the unfilled lables.")
             for not_fillall_label_id in range(len(label_vocab)):
                 if label_index_tracker[not_fillall_label_id] < len(
                         label_index_matrix[not_fillall_label_id]):
-                    print("fill more id", not_fillall_label_id)
                     start = label_index_tracker[not_fillall_label_id]
                     each_client_partition_result.extend(
                         label_index_matrix[not_fillall_label_id][start:])

@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+    DistNetwork类提供了初始化、关闭分布式网络通信，以及发送和接收数据包的功能。
+    它使用torch.distributed库来管理分布式训练过程中的进程组，
+    并通过自定义的Package和PackageProcessor来封装和处理通信数据，从而支持在分布式训练任务中的高效数据交换。
+    此外，类中还记录了发送和接收数据的总量，以便于监控网络通信的开销。
+"""
 import os
 import torch
 import torch.distributed as dist
@@ -21,6 +27,7 @@ import datetime
 from .communicator.processor import Package, PackageProcessor
 from ..utils import Logger
 
+# 定义不同数据类型到字节的映射，用于计算数据包大小
 type2byte = {
     torch.int8: 1,
     torch.int16: 2,

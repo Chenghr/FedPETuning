@@ -229,23 +229,28 @@ class BaseServerManager(ServerManager):
     def __init__(self, network, handler):
         super(BaseServerManager, self).__init__(network, handler)
 
-        self.logger = registry.get("logger")
+        self.logger = registry.get("logger")  # 获取日志记录器
 
     def setup(self):
-        self._network.init_network_connection()
+        """Set up the server."""
+        self._network.init_network_connection()  # 初始化网络连接
 
         rank_client_id_map = {}
 
+        # 接收来自每个客户端的消息，获取其排名和ID映射关系
         for rank in range(1, self._network.world_size):
             _, _, content = self._network.recv(src=rank)
             rank_client_id_map[rank] = content[0].item()
-        self.coordinator = Coordinator(rank_client_id_map, mode='GLOBAL')  # mode='GLOBAL'
+
+        # 创建一个Coordinator对象
+        self.coordinator = Coordinator(rank_client_id_map, mode='GLOBAL')
         if self._handler is not None:
             self._handler.client_num_in_total = self.coordinator.total
 
     def main_loop(self):
-
+        """Main loop of the server."""
         while self._handler.if_stop is not True:
+            # 启动一个线程用于激活客户端
             activate = threading.Thread(target=self.activate_clients)
             activate.start()
 
@@ -261,13 +266,13 @@ class BaseServerManager(ServerManager):
 
     def shutdown(self):
         """Shutdown stage."""
-        self.shutdown_clients()
+        self.shutdown_clients()  # 关闭所有客户端连接
         super().shutdown()
 
     def activate_clients(self):
-
+        """Activate clients."""
         self.logger.info("BaseClient activation procedure")
-        clients_this_round = self._handler.sample_clients()
+        clients_this_round = self._handler.sample_clients()  # 获取当前轮次要训练的客户端列表
         rank_dict = self.coordinator.map_id_list(clients_this_round)
 
         self.logger.info("BaseClient id list: {}".format(clients_this_round))
@@ -275,6 +280,7 @@ class BaseServerManager(ServerManager):
         for rank, values in rank_dict.items():
             downlink_package = self._handler.downlink_package
             id_list = torch.Tensor(values).to(downlink_package[0].dtype)
+            # 发送下行数据包给每个客户端
             self._network.send(
                 content=[id_list] + downlink_package,
                 message_code=MessageCode.ParameterUpdate,
@@ -282,25 +288,19 @@ class BaseServerManager(ServerManager):
             )
 
     def shutdown_clients(self):
-        """Shutdown all clients.
-
-        Send package to each client with :attr:`MessageCode.Exit`.
-
-        Note:
-            Communication agreements related: User can overwrite this function to define package
-            for exiting information.
-        """
+        """Shutdown all clients."""
         client_list = range(self._handler.client_num_in_total)
         rank_dict = self.coordinator.map_id_list(client_list)
 
         for rank, values in rank_dict.items():
             downlink_package = self._handler.downlink_package
             id_list = torch.Tensor(values).to(downlink_package[0].dtype)
+            # 发送退出消息给每个客户端
             self._network.send(content=[id_list] + downlink_package,
                                message_code=MessageCode.Exit,
                                dst=rank)
 
-        # wait for client exit feedback
+        # 等待客户端退出反馈
         _, message_code, _ = self._network.recv(
             src=self._network.world_size - 1
         )

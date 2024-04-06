@@ -1,4 +1,4 @@
-"""define evaluation scripts for FedETuning """
+"""Define evaluation scripts for FedETuning"""
 
 import torch
 import numpy as np
@@ -6,24 +6,58 @@ from abc import ABC
 
 from utils.register import registry
 
-
 class BaseEval(ABC):
+    """Base evaluation class."""
     def __init__(self, device, metric):
+        """Initialize the evaluation class.
+
+        Args:
+            device (torch.device): The device on which the evaluation will be performed.
+            metric (BaseMetric): The metric object used for evaluation.
+        """
         self.device = device
         self.metric = metric
         self.task_name = metric.task_name
         self.logger = registry.get("logger")
 
     def test_and_eval(self, valid_dl, model, model_type, model_output_mode):
-        raise NotImplementedError
+        """Perform evaluation on the validation dataset and compute metrics.
 
+        Args:
+            valid_dl (DataLoader): DataLoader for the validation dataset.
+            model (torch.nn.Module): The model to be evaluated.
+            model_type (str): Type of the model.
+            model_output_mode (str): Output mode of the model.
+
+        Returns:
+            dict: A dictionary containing evaluation results.
+        """
+        raise NotImplementedError
 
 @registry.register_eval("glue")
 class GlueEval(BaseEval, ABC):
+    """Evaluation class for GLUE tasks."""
     def __init__(self, device, metric):
+        """Initialize the GlueEval class.
+
+        Args:
+            device (torch.device): The device on which the evaluation will be performed.
+            metric (BaseMetric): The metric object used for evaluation.
+        """
         super(GlueEval, self).__init__(device, metric)
 
     def test_and_eval(self, valid_dl, model, model_type, model_output_mode):
+        """Perform evaluation on the GLUE validation dataset and compute metrics.
+
+        Args:
+            valid_dl (DataLoader): DataLoader for the validation dataset.
+            model (torch.nn.Module): The model to be evaluated.
+            model_type (str): Type of the model.
+            model_output_mode (str): Output mode of the model.
+
+        Returns:
+            dict: A dictionary containing evaluation results.
+        """
         model.to(self.device)
 
         eval_loss, nb_eval_steps = 0.0, 0
@@ -40,7 +74,6 @@ class GlueEval(BaseEval, ABC):
                           'labels': batch[3]
                           }
                 if model_type != 'distilbert':
-                    # XLM, DistilBERT and RoBERTa don't use segment_ids
                     inputs['token_type_ids'] = \
                         batch[2] if model_type in ['bert', 'xlnet'] else None
                 outputs = model(inputs)
@@ -68,13 +101,30 @@ class GlueEval(BaseEval, ABC):
 
         return results
 
-
 @registry.register_eval("conll")
 class CoNLLEval(BaseEval, ABC):
+    """Evaluation class for CoNLL tasks."""
     def __init__(self, device, metric):
+        """Initialize the CoNLLEval class.
+
+        Args:
+            device (torch.device): The device on which the evaluation will be performed.
+            metric (BaseMetric): The metric object used for evaluation.
+        """
         super(CoNLLEval, self).__init__(device, metric)
 
     def test_and_eval(self, valid_dl, model, model_type, model_output_mode):
+        """Perform evaluation on the CoNLL validation dataset and compute metrics.
+
+        Args:
+            valid_dl (DataLoader): DataLoader for the validation dataset.
+            model (torch.nn.Module): The model to be evaluated.
+            model_type (str): Type of the model.
+            model_output_mode (str): Output mode of the model.
+
+        Returns:
+            dict: A dictionary containing evaluation results.
+        """
         model.to(self.device)
 
         eval_loss, nb_eval_steps = 0.0, 0
@@ -91,7 +141,6 @@ class CoNLLEval(BaseEval, ABC):
                           'labels': batch[3]
                           }
                 if model_type != 'distilbert':
-                    # XLM, DistilBERT and RoBERTa don't use segment_ids
                     inputs['token_type_ids'] = \
                         batch[2] if model_type in ['bert', 'xlnet'] else None
                 outputs = model(inputs)
@@ -121,6 +170,3 @@ class CoNLLEval(BaseEval, ABC):
         results.update(result)
 
         return results
-
-
-
