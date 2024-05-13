@@ -66,6 +66,9 @@ def tokenize_and_align_labels(seq_tokens, seq_labels, tokenizer,
 
 def conll_convert_examples_to_features(examples, tokenizer, max_length, label_list,
                                        output_mode, label_all_tokens=False, padding=True):
+    """针对 CoNLL 格式的序列标记任务, 如命名实体识别 (NER) 或词性标注 (POS); 
+        处理数据并将其准备成 NLP 任务中模型所需的格式.
+    """
     seq_tokens = [example["tokens"] for example in examples]
     seq_labels = [example["labels"] for example in examples]
 

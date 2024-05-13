@@ -1,12 +1,14 @@
-"""Base DataLoader for FedETuning"""
+"""Base DataLoader for FedPEFTuning"""
 
 import os
 from abc import ABC
-from utils import registry, pickle_read, pickle_write, check_cached_data
 
 import torch
-from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
+from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
+                              TensorDataset)
 from transformers import AutoTokenizer
+
+from utils import check_cached_data, pickle_read, pickle_write, registry
 
 
 class BaseDataLoader(ABC):
@@ -21,13 +23,15 @@ class BaseDataLoader(ABC):
         self.partition_name = self.federated_config.partition_method
         self.clients_list = self.federated_config.clients_id_list
 
-        self._load_attributes()
-        self._build_tokenizer()
-        self._build_registry()
+        self._load_attributes()     # 读取不同的 pickle 数据
+        self._build_tokenizer()     # 为不同的模型构建分词器
+        self._build_registry()      # 根据模型的不同设置不同的标签数目，以及标签转换映射方式
 
         self.logger = registry.get("logger")
 
     def _load_data(self):
+        """构建 dataloader; 优先加载之前处理好的缓存数据, 第一次加载数据时会将数据缓存在指定目录下
+        """
         if self.federated_config.rank == -1:
             self._load_centralized_data()
         elif self.federated_config.rank == 0:
@@ -51,7 +55,9 @@ class BaseDataLoader(ABC):
             train_examples_num_dict, valid_examples_num_dict = self._convert_examples_to_features()
 
         if self.federated_config.do_mimic and self.federated_config.rank == 0:
+            # only process once data processing in server if self.federated_config.do_mimic True
             with open(os.path.join(self.data_config.cache_dir, "server_write.flag"), "w") as file:
+                # 通过写入文件的方式，标记数据处理操作已经完成
                 file.write("BaseServer wrote OK\n")
 
         self.valid_dataloader = self.build_dataloader(valid_fedtures_all, "valid")
@@ -66,7 +72,7 @@ class BaseDataLoader(ABC):
         if self.federated_config.do_mimic:
             self.logger.info(f"local rank {self.federated_config.rank} is waiting for processed features")
             while not check_cached_data(self.data_config.cache_dir):
-                ...
+                ... # 在等待特定条件满足之前，代码将进入一个循环等待状态。
             self.logger.info(f"local rank {self.federated_config.rank} builds dataloader")
             train_features_dict, valid_features_dict, valid_fedtures_all, test_fedtures_all, \
             train_examples_num_dict, valid_examples_num_dict, train_num, valid_num, test_num \
@@ -112,6 +118,8 @@ class BaseDataLoader(ABC):
         self.test_dataloader = self.build_dataloader(test_fedtures_all, "test")
 
     def _convert_examples_to_features(self):
+        """将原始数据转换为特征并保存到缓存中。
+        """
         raw_data = pickle_read(self.data_config.raw_dataset_path)
         partition_data = pickle_read(self.data_config.partition_dataset_path)
 
@@ -143,6 +151,8 @@ class BaseDataLoader(ABC):
                          train_examples_num_dict, valid_examples_num_dict,
                          train_features_dict, valid_features_dict,
                          valid_fedtures_all=None, test_fedtures_all=None):
+        """让子类实现，进行联邦数据拆分
+        """
         raise NotImplementedError
 
     def _load_attributes(self):
@@ -179,6 +189,7 @@ class BaseDataLoader(ABC):
             all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
 
         if self.model_config.tuning_type and "prompt" in self.model_config.tuning_type:
+            # 针对 prompt-tuning 提供特殊的初始化逻辑
             all_loss_ids = torch.tensor([f.loss_ids for f in features], dtype=torch.float)
             dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels, all_loss_ids)
         else:
@@ -211,7 +222,8 @@ class BaseDataLoader(ABC):
 
     @property
     def cached_data_file(self):
-
+        """根据当前对象的属性动态地生成缓存数据文件的路径，以便后续的数据读取和写入操作。
+        """
         if "prompt" in self.training_config.tuning_type:
             prompt_flag = "prompt_"
         else:

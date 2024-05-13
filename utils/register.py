@@ -1,6 +1,9 @@
 """
     Registry 类是一个全局的注册中心，用于注册和获取各种资源，如模型、数据加载器、损失函数、联邦学习算法、评估方法等。
     它支持动态地添加和获取这些资源，极大地提高了代码的模块化和可扩展性。
+
+    通过注册表，我们可以方便地管理和使用多个模型，而不需要直接引用它们的类或模块，使得代码更加模块化和可维护。
+    其中 register_loss、register_data、register_model 等函数为 classmethod, 且返回的均为 warp 装饰器，因此可以作为装饰器直接使用。
 """
 
 class Registry:
@@ -41,7 +44,8 @@ class Registry:
         return value
 
     @classmethod
-    def register_loss(cls, name):
+    def register_loss(cls, name):   
+        # 返回了一个内部定义的函数 wrap，因此它可以被用作装饰器。
         def wrap(func):
             from utils.loss import BaseLoss
 
