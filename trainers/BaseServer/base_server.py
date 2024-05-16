@@ -227,6 +227,7 @@ class BaseServerManager(ServerManager):
     """
 
     def __init__(self, network, handler):
+        # handler 即为 BaseSyncServerHandler
         super(BaseServerManager, self).__init__(network, handler)
 
         self.logger = registry.get("logger")  # 获取日志记录器

@@ -42,7 +42,8 @@ logger.info(f"{task_name}'s max_seq is {max_seq}")
 cmds = []
 gpu_index = 0
 hyper_parameter = cen_best_hyperparameter[task_name][tuning_type]
-hyper_parameter["seed"] = []
+hyper_parameter["seed"] = [1]
+
 for parameter in it.product(*list(hyper_parameter.values())):
     specific_parameter_dict = {key: parameter[list(hyper_parameter.keys()).index(key)]
                                for key in list(hyper_parameter.keys())}
@@ -76,6 +77,7 @@ for parameter in it.product(*list(hyper_parameter.values())):
 
     gpu_index += 1
     cmds.append(cen_cmd)
+    logger.debug(f"Generated command: {cen_cmd}")
 
 run_process("sleep 3s")
 logger.warning(f"run {len(cmds)} seed-ablation tasks for roberta_{task_name}_{tuning_type}")
