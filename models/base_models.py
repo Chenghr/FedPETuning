@@ -1,4 +1,4 @@
-"""BaseModel for FedETuning"""
+"""BaseModel for FedPEFTuning"""
 
 import copy
 from abc import ABC
@@ -19,7 +19,6 @@ class BaseModels(nn.Module, ABC):
 
         self.task_name = task_name
 
-        # 获取配置
         config = registry.get("config")
         self.model_config = config.model_config
         self.rank = config.federated_config.rank
@@ -36,26 +35,22 @@ class BaseModels(nn.Module, ABC):
         return auto_config
 
     def _build_model(self):
-        # 构建基础模型
         backbone = self._add_base_model()
 
-        # 添加排列层（如果有）
         if getattr(self.model_config, "permutation_layers", None):
             backbone = self._add_permutate_layers(backbone)
 
-        # 添加 Delta 模型（如果有）
         if self.model_config.tuning_type:
             backbone = self._add_delta_model(backbone)
 
         return backbone
 
     def _add_base_model(self):
-        # 添加基础模型的抽象方法，需要子类实现
         raise NotImplementedError
 
     def _add_permutate_layers(self, backbone):
         # 添加排列层的方法，用于实现层排列功能
-        # TODO：当前只支持 BERT-NLU 任务
+        # TODO：当前只支持 BERT-NLU (自然语言理解)任务
         bert_modules = self.get_bert_module(backbone)
         old_modules = bert_modules.encoder.layer
         scrambled_modules = torch.nn.ModuleList()

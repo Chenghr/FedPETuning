@@ -1,19 +1,17 @@
-"""BaseClientTrainer for FedETuning"""
+"""BaseClientTrainer for FedPEFTuning"""
 
 from abc import ABC
 from typing import List
-from thop import profile
-from thop import clever_format
 
 import torch
-from transformers import get_linear_schedule_with_warmup, AdamW
+from thop import clever_format, profile
+from transformers import AdamW, get_linear_schedule_with_warmup
 
-from utils import registry
-from utils import get_parameter_number
-from fedlab.utils import MessageCode, SerializationTool
+from fedlab.core.client.manager import (ORDINARY_TRAINER, SERIAL_TRAINER,
+                                        PassiveClientManager)
 from fedlab.core.client.trainer import ClientTrainer
-from fedlab.core.client.manager import PassiveClientManager
-from fedlab.core.client.manager import ORDINARY_TRAINER, SERIAL_TRAINER
+from fedlab.utils import MessageCode, SerializationTool
+from utils import get_parameter_number, registry
 
 
 class BaseClientTrainer(ClientTrainer, ABC):
@@ -258,7 +256,7 @@ class BaseClientTrainer(ClientTrainer, ABC):
             if self.training_config.gradient_accumulation_steps > 1:
                 loss = loss / self.training_config.gradient_accumulation_steps
 
-            if self.training_config.fp16:
+            if self.training_config.fp16:   # 使用 Apex 的混合精度训练进行损失缩放和反向传播
                 try:
                     from apex import amp
                 except ImportError:
