@@ -66,8 +66,8 @@ for parameter in it.product(*list(hyper_parameter.values())):
         "--dataset_name", dataset_name,
         "--metric_name", metric_name,
         "--model_output_mode", model_output_mode,
-        "--tuning_type", f"{tuning_type}_roberta-base",
-        "--do_grid", "True",
+        "--tuning_type", f"{tuning_type}_roberta-base", # set model
+        "--do_grid", "False",
     ]
     for key, value in specific_parameter_dict.items():
         options.extend(["--" + key, str(value)])

@@ -3,6 +3,8 @@
 import os
 import time
 import copy
+# import json
+# import dataclasses
 from abc import ABC
 from omegaconf import OmegaConf
 from transformers import HfArgumentParser
@@ -12,11 +14,10 @@ from utils.register import registry
 from configs import ModelArguments, DataTrainingArguments, TrainArguments, FederatedTrainingArguments
 from configs.tuning import get_delta_config, get_delta_key
 
-grid_hyper_parameters = [
-    "tuning_type", "prefix_token_num", "bottleneck_dim",
-    "learning_rate", "dataset_name", "metric_name", "model_output_mode", "seed",
-    "alpha", "sample", "num_train_epochs"
-]
+grid_hyper_parameters = ["tuning_type", "prefix_token_num", "prefix_token_num", "bottleneck_dim",
+                         "learning_rate", "dataset_name", "metric_name", "model_output_mode", "seed", 
+                         "alpha", "sample", 'num_train_epochs'] # if do_grid=True and I don't set alpha (or sample) by agrs, default value is used
+
 
 class Config(ABC):
     def __init__(self, model_args, data_args, training_args, federated_args):
@@ -26,8 +27,7 @@ class Config(ABC):
         self.federated_config = federated_args
 
     def save_configs(self):
-        # Implement the save functionality if needed
-        pass
+        ...
 
     def check_config(self):
         self.config_check_federated()
@@ -35,58 +35,52 @@ class Config(ABC):
         self.config_check_tuning()
 
     def config_check_federated(self):
-        if "cen" in self.federated_config.fl_algorithm:
-            if self.federated_config.rank == -1:
-                self.federated_config.world_size = 1
+
+        if "cen" in self.F.fl_algorithm:
+            if self.F.rank == -1:
+                self.F.world_size = 1
             else:
-                raise ValueError(f"Must set world_size, but find {self.federated_config.world_size}")
+                raise ValueError(f"Must set world_size, but find {self.F.world_size}")
         else:
-            if self.federated_config.clients_num % (self.federated_config.world_size - 1) != 0:
-                raise ValueError(f"{self.federated_config.clients_num} % {self.federated_config.world_size - 1} != 0")
+            if self.F.clients_num % (self.F.world_size - 1):
+                raise ValueError(f"{self.F.clients_num} % {(self.F.world_size - 1)} != 0")
 
     def config_check_model(self):
-        # Implement the model checking functionality if needed
-        pass
+        ...
 
     def config_check_tuning(self):
-        delta_config = self._get_delta_config()
 
-        # Grid search hard coded parameters
-        if self.training_config.do_grid:
-            self._update_delta_config_with_grid_search(delta_config)
+        if not self.M.tuning_type or "fine" in self.M.tuning_type:
+            delta_config = {"delta_type": "fine-tuning"}
+            self.M.tuning_type = ""
+        else:
+            delta_args = get_delta_config(self.M.tuning_type)
+            if self.D.task_name in delta_args:
+                delta_config = delta_args[self.D.task_name]
+            else:
+                delta_config = delta_args
+
+        # TODO hard code for do grid search
+        if self.T.do_grid:
+            for key in delta_config:
+                if getattr(self.M, key, None):
+                    delta_config[key] = getattr(self.M, key)
+
+                if key == "learning_rate" or key == "num_train_epochs":
+                    delta_config[key] = getattr(self.T, key)
 
         registry.register("delta_config", delta_config)
 
-        # Update all configurations with delta_config
-        for config in [self.training_config, self.model_config, self.federated_config, self.data_config]:
+        for config in [self.T, self.M, self.F, self.D]:
             for key, value in delta_config.items():
                 if getattr(config, key, None) is not None:
                     setattr(config, key, value)
-
-        self.training_config.tuning_type = delta_config["delta_type"]
-
-    def _get_delta_config(self):
-        if not self.model_config.tuning_type or "fine" in self.model_config.tuning_type:
-            delta_config = {"delta_type": "fine-tuning"}
-            self.model_config.tuning_type = ""
-        else:
-            # ddelta_args is a dictionary. 
-            # Fine-tuning training parameters can be obtained through the task name.
-            delta_args = get_delta_config(self.model_config.tuning_type)    
-            delta_config = delta_args.get(self.data_config.task_name, delta_args)   
-        return delta_config
-
-    def _update_delta_config_with_grid_search(self, delta_config):
-        for key in delta_config:
-            # value = getattr(object, "attribute_name", default_value)
-            model_value = getattr(self.model_config, key, None)
-            if model_value is not None:
-                delta_config[key] = model_value
-
-            if key in ["learning_rate", "num_train_epochs"]:
-                training_value = getattr(self.training_config, key, None)
-                if training_value is not None:
-                    delta_config[key] = training_value
+                    # registry.debug(f"{key}={value}")
+        self.T.tuning_type = delta_config["delta_type"]
+        # TODO hard code
+        # if "fed" in self.F.fl_algorithm and "lora" in self.T.tuning_type:
+        #     self.T.num_train_epochs = 1
+        #     delta_config["num_train_epochs"] = self.T.num_train_epochs
 
     @property
     def M(self):
@@ -104,12 +98,16 @@ class Config(ABC):
     def F(self):
         return self.federated_config
 
+
 def amend_config(model_args, data_args, training_args, federated_args):
     config = Config(model_args, data_args, training_args, federated_args)
 
     if config.F.rank > 0:
-        time.sleep(2)  # let server firstly start
+        # let server firstly start
+        time.sleep(2)
 
+    # load customer config (hard code)
+    # TODO args in config.yaml can overwrite --arg
     root_folder = registry.get("root_folder")
     cust_config_path = os.path.join(root_folder, f"run/{config.F.fl_algorithm}/config.yaml")
     if os.path.isfile(cust_config_path):
@@ -119,9 +117,11 @@ def amend_config(model_args, data_args, training_args, federated_args):
                 args = getattr(config, key)
                 for k, v in values.items():
                     if config.T.do_grid and k in grid_hyper_parameters:
-                        continue  # grid search not overwrite --arg
+                        # grid search not overwrite --arg
+                        continue
                     setattr(args, k, v)
 
+    # set training path
     config.T.output_dir = os.path.join(config.T.output_dir, config.D.task_name)
     make_sure_dirs(config.T.output_dir)
 
@@ -132,24 +132,31 @@ def amend_config(model_args, data_args, training_args, federated_args):
                 cache_dir, f"cached_{config.M.model_type}_{config.F.clients_num}_{config.F.alpha}"
             )
         else:
-            config.D.cache_dir = os.path.join(cache_dir, f"cached_{config.M.model_type}_centralized")
+            config.D.cache_dir = os.path.join(
+                cache_dir, f"cached_{config.M.model_type}_centralized"
+            )
     make_sure_dirs(config.D.cache_dir)
 
+    # set training_args
     config.T.save_dir = os.path.join(config.T.output_dir, config.F.fl_algorithm.lower())
     make_sure_dirs(config.T.save_dir)
     config.T.checkpoint_dir = os.path.join(config.T.save_dir, "saved_model")
     make_sure_dirs(config.T.checkpoint_dir)
 
+    # set phase
     phase = "train" if config.T.do_train else "evaluate"
     registry.register("phase", phase)
 
+    # set metric log path
     times = time.strftime("%Y%m%d%H%M%S", time.localtime())
     registry.register("run_time", times)
     config.T.times = times
     config.T.metric_file = os.path.join(config.T.save_dir, f"{config.M.model_type}_{config.D.task_name}.eval")
     config.T.metric_log_file = os.path.join(config.T.save_dir, f"{times}_{config.M.model_type}_{config.D.task_name}.eval.log")
 
+    # set federated_args
     if config.F.do_mimic and config.F.rank == 0:
+        # wait for server processes data
         server_write_flag_path = os.path.join(config.D.cache_dir, "server_write.flag")
         rm_file(server_write_flag_path)
 
@@ -168,13 +175,13 @@ def amend_config(model_args, data_args, training_args, federated_args):
         registry.register("grid_info", grid_info)
 
         config.T.metric_line = f"{times}_{config.M.model_type}_{config.T.tuning_type}_" \
-                               f"seed={config.T.seed}_rounds={config.F.rounds}_" \
+                                f"seed={config.T.seed}_rounds={config.F.rounds}_" \
                                f"cli={config.F.clients_num}_alp={config.F.alpha}_" \
                                f"sap={config.F.sample}_epo={config.T.num_train_epochs}_" \
                                f"lr={config.T.learning_rate}_{grid_info}_"
     else:
         config.T.metric_line = f"{times}_{config.M.model_type}_{config.T.tuning_type}_" \
-                               f"seed={config.T.seed}_rounds={config.F.rounds}_" \
+                                f"seed={config.T.seed}_rounds={config.F.rounds}_" \
                                f"cli={config.F.clients_num}_alp={config.F.alpha}_" \
                                f"sap={config.F.sample}_rd={config.F.rounds}_epo={config.T.num_train_epochs}_" \
                                f"lr={config.T.learning_rate}_"
@@ -183,13 +190,17 @@ def amend_config(model_args, data_args, training_args, federated_args):
 
     return config
 
+
 def build_config():
+    # read parameters
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainArguments, FederatedTrainingArguments))
     model_args, data_args, training_args, federated_args = parser.parse_args_into_dataclasses()
 
+    # amend and register configs
     config = amend_config(model_args, data_args, training_args, federated_args)
     delta_config = registry.get("delta_config")
 
+    # logging fl & some path
     logger = registry.get("logger")
     logger.info(f"FL-Algorithm: {config.federated_config.fl_algorithm}")
     logger.info(f"output_dir: {config.training_config.output_dir}")
@@ -200,4 +211,6 @@ def build_config():
                  f"cli={config.F.clients_num}_alp={config.F.alpha}_cr={config.F.rounds}_sap={config.F.sample}_"
                  f"lr={config.T.learning_rate}_epo={config.T.num_train_epochs}")
 
+    # logger.debug(delta_config)
+    # exit()
     return config

@@ -10,7 +10,7 @@ class TrainArguments(TrainingArguments):
         default=False, metadata={"help": "whether to load last checkpoint"}
     )
     metric_name: str = field(
-        default="glue", metadata={"help": "whether to load last checkpoint"}
+        default="glue", metadata={"help": "evaluation metrics for tasks"}
     )
     loss_name: str = field(
         default="xent", metadata={"help": "{xent: cross_entropy}"}
