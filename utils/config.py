@@ -114,7 +114,7 @@ def amend_config(model_args, data_args, training_args, federated_args):
     cust_config_path = os.path.join(root_folder, f"run/{config.F.fl_algorithm}/config.yaml")
     if os.path.isfile(cust_config_path):
         cust_config = OmegaConf.load(cust_config_path)
-        for key, values in cust_config.items():
+        for key, values in cust_config.items():     # key: data_config、federated_config...
             if values:
                 args = getattr(config, key)
                 for k, v in values.items():
@@ -186,7 +186,6 @@ def amend_config(model_args, data_args, training_args, federated_args):
 def build_config():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainArguments, FederatedTrainingArguments))
     model_args, data_args, training_args, federated_args = parser.parse_args_into_dataclasses()
-
     config = amend_config(model_args, data_args, training_args, federated_args)
     delta_config = registry.get("delta_config")
 

@@ -32,7 +32,8 @@ all_delta_config = {
                     "lora_alpha": 8,
                     "lora_r": 8,
                     "non_linearity": "gelu_new",
-                    "num_train_epochs": 80,
+                    # "num_train_epochs": 80,
+                    "num_train_epochs": 3,
                     "per_device_eval_batch_size": 100,
                     "per_device_train_batch_size": 32,
                     "unfrozen_modules": [
@@ -165,7 +166,172 @@ all_delta_config = {
                 "classifier",
             ],
             "prefix_token_num": 16
-        }
+        },
+    "adapter_llama":
+        {
+            "delta_type": "adapter",
+            "learning_rate": 1e-3,
+            "unfrozen_modules": [
+                "deltas",
+                "layer_norm",
+                "final_layer_norm",
+                "classifier",
+            ],
+            "bottleneck_dim": 16,
+        },
+    'soft_prompt_llama':
+        {
+            "delta_type": "soft_prompt",
+            "learning_rate": 3e-2,
+            "soft_token_num": 100,
+            "unfrozen_modules": [
+                "deltas",
+                "classifier",
+            ],
+        },
+    "lora_llama":
+        {
+            "rte":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0005,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 80,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "qqp":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0005,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 25,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "mrpc":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.001,
+                    "lora_alpha": 16,
+                    "lora_r": 16,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 30,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas",
+                        "layer_norm"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "mnli":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0005,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 30,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 16,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "cola":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0004,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 80,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "qnli":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0004,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 25,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                },
+            "sst-2":
+                {
+                    "delta_type": "lora",
+                    "learning_rate": 0.0005,
+                    "lora_alpha": 8,
+                    "lora_r": 8,
+                    "non_linearity": "gelu_new",
+                    "num_train_epochs": 60,
+                    "per_device_eval_batch_size": 100,
+                    "per_device_train_batch_size": 32,
+                    "unfrozen_modules": [
+                        "classifier",
+                        "deltas"
+                    ],
+                    "warmup_ratio": 0.06,
+                    "weight_decay": 0.1,
+                }
+
+        },
+    "bitfit_llama":
+        {
+            "delta_type": "bitfit",
+            "learning_rate": 3e-4,
+            "unfrozen_modules": [
+                "classifier",
+                "deltas"
+            ],
+        },
+    "prefix_llama":
+        {
+            "delta_type": "prefix",
+            "learning_rate": 1e-3,
+            "unfrozen_modules": [
+                "deltas",
+                "classifier",
+            ],
+            "prefix_token_num": 16
+        },
 }
 
 

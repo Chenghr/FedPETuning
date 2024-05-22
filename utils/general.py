@@ -131,12 +131,27 @@ def global_metric_save(handler, training_config, logger):
 
 
 def cen_metric_save(loc_trainer, training_config, logger):
-    test_metric = loc_trainer.loc_test_metric[-1]
-    valid_metric = loc_trainer.loc_best_metric[-1]
-    line = training_config.metric_line + f"valid_{loc_trainer.metric_name}={valid_metric:.3f}_"
-    line += f"test_{loc_trainer.metric_name}={test_metric:.3f}"
-    file_write(line, training_config.metric_file, "a+")
+    # 获取最新的测试指标和验证指标，并处理可能的 KeyError
+    try:    
+        test_metric = loc_trainer.loc_test_metric[-1]
+    except (IndexError, KeyError):
+        logger.error("Unable to retrieve test metric from loc_trainer.loc_test_metric")
+        test_metric = float('nan')  
+
+    try:
+        valid_metric = loc_trainer.loc_best_metric[-1]
+    except (IndexError, KeyError):
+        logger.error("Unable to retrieve valid metric from loc_trainer.loc_best_metric")
+        valid_metric = float('nan')  
+
+    # 生成指标线
+    metric_line = f"{training_config.metric_line}valid_{loc_trainer.metric_name}="+\
+                    f"{valid_metric:.3f}_test_{loc_trainer.metric_name}={test_metric:.3f}"
+
+    # 将指标线写入文件
+    file_write(metric_line, training_config.metric_file, "a+")
     logger.info(f"training metric --> {training_config.metric_file}")
+
 
 
 def get_parameter_number(net):

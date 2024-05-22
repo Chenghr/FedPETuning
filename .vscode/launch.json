@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python 调试程序: FedPEFTuning, mian.py",
+            "name": "Debug: centralized-roberta",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
@@ -20,19 +20,17 @@
                 "--max_seq_length", "128",
                 // federated config
                 "--fl_algorithm", "centralized",
-                "--port", "8080",
-                "--rank", "-1",
-                "--world_size", "3", 
-                "--rounds", "0",
+                "--pson", "true",
+                "--test_rounds", "true",
                 // models config
                 "--model_name_or_path", "./pretrain/nlp/roberta-base/",
+                "--model_type", "roberta",
                 "--model_output_mode", "seq_classification", 
                 "--tuning_type", "lora_roberta-base", 
-                "--lora_r", "16",
                 "--lora_alpha", "16", 
                 // trainers config
                 "--metric_name", "glue",
-                "--do_grid", "True",
+                "--do_grid", "False",
                 // other config
                 "--output_dir", "./output/fedglue",
                 "--learning_rate", "0.001",
@@ -40,6 +38,48 @@
             ],
             // The code is not customized for multi-GPU scenarios
             "env": {"CUDA_VISIBLE_DEVICES": "0"}
+        },
+        {
+            "name": "Debug: centralized-llama",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "${command:python.interpreterPath}",
+            "args": [
+                // datasets config
+                "--task_name", "rte",
+                "--dataset_name", "glue",
+                "--raw_dataset_path", "./data/fedglue",
+                "--partition_dataset_path", "./data/fedglue",
+                "--max_seq_length", "128",
+
+                // federated config
+                "--fl_algorithm", "centralized",
+                // "--port", "8080",
+                // "--rank", "-1",
+                // "--world_size", "3", 
+                "--rounds", "3",
+                "--test_rounds", "true",
+
+                // models config
+                "--model_name_or_path", "./pretrain/nlp/llama/llama-7b",
+                "--model_type", "llama",
+                "--model_output_mode", "seq_classification", 
+                "--tuning_type", "lora_llama", 
+                // "--lora_r", "16",
+                "--lora_alpha", "16", 
+
+                // trainers config
+                // "--metric_name", "glue",
+                "--do_grid", "False",
+                // "--learning_rate", "0.001",
+                // other config
+                "--output_dir", "./output/fedglue",
+                "--seed", "1", 
+            ],
+            // The code is not customized for multi-GPU scenarios
+            "env": {"CUDA_VISIBLE_DEVICES": "0"}
         }
-    ]
+    ],
 }

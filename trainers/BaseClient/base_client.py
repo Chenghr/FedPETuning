@@ -5,7 +5,8 @@ from typing import List
 
 import torch
 from thop import clever_format, profile
-from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
+from torch.optim import AdamW
 
 from fedlab.core.client.manager import (ORDINARY_TRAINER, SERIAL_TRAINER,
                                         PassiveClientManager)
@@ -306,7 +307,6 @@ class BaseClientTrainer(ClientTrainer, ABC):
 
         test_metric, test_loss = result[self.metric_name], result["eval_loss"]
 
-        # TODO hard code
         if not self.loc_best_metric.get(idx, None):
             self.loc_best_metric[idx] = float('-inf')
         if self.loc_best_metric[idx] < test_metric:
