@@ -17,7 +17,7 @@ model_config:
   # model_type: llama 
   # model_type: roberta
   # model_output_mode: seq_classification
-  # model_output_mode: token_classification
+  # model_output_mode: token_classification  
   # permutation_layers: false
   # client_model_layers: [0,1,2]
   # server_model_layers: [0,1,2]

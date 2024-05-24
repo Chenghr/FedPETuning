@@ -30,8 +30,6 @@ class BaseDataLoader(ABC):
         self.logger = registry.get("logger")
 
     def _load_data(self):
-        """构建 dataloader; 优先加载之前处理好的缓存数据, 第一次加载数据时会将数据缓存在指定目录下
-        """
         if self.federated_config.rank == -1:
             self._load_centralized_data()
         elif self.federated_config.rank == 0:
@@ -138,6 +136,11 @@ class BaseDataLoader(ABC):
             train_features_dict, valid_features_dict,
             valid_fedtures_all, test_fedtures_all
         )
+        # federated_data = (
+        #     train_features_dict, valid_features_dict, valid_fedtures_all, test_fedtures_all,
+        #     train_examples_num_dict, valid_examples_num_dict,
+        #     self.train_num, self.valid_num, self.test_num
+        # )
 
         self.logger.info("saving processed features ...")
         pickle_write(federated_data, self.cached_data_file)
@@ -177,7 +180,7 @@ class BaseDataLoader(ABC):
         all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
         all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
 
-        if self.model_config.model_type not in ["distilbert", "roberta"]:
+        if self.model_config.model_type not in ["distilbert", "roberta", "llama"]:
             all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
         else:
             # distilbert and roberta don't have token_type_ids
@@ -201,23 +204,30 @@ class BaseDataLoader(ABC):
         return dataloader
 
     def _build_tokenizer(self):
+        tokenizer_settings = {
+            "use_fast": True,
+            "revision": self.model_config.model_revision,
+            "use_auth_token": True if self.model_config.use_auth_token else None
+        }
 
+        # Support for llama-7b with specific tokenizer adjustments
         if self.model_config.model_type in {"bloom", "gpt2", "roberta"}:
+            tokenizer_settings.update({
+                "add_prefix_space": True if self.model_config.model_type in {"roberta"} else False
+            })
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_config.model_name_or_path,
-                # cache_dir=self.model_config.cache_dir,
-                use_fast=True,
-                revision=self.model_config.model_revision,
-                use_auth_token=True if self.model_config.use_auth_token else None,
-                add_prefix_space=True,
+                **tokenizer_settings
+            )
+        elif self.model_config.model_type == "llama":
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_config.model_name_or_path,
+                use_fast=False,
             )
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_config.model_name_or_path,
-                # cache_dir=self.model_config.cache_dir,
-                use_fast=True,
-                revision=self.model_config.model_revision,
-                use_auth_token=True if self.model_config.use_auth_token else None,
+                **tokenizer_settings
             )
 
     @property

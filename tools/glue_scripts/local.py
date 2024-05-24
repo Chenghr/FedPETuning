@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 
 
 def get_dist(data, idx_list):
+    # 计算给定数据集中指定索引列表的标签分布
     labels = []
     for idx in idx_list:
         labels.append(data[idx].label)
@@ -13,6 +14,7 @@ def get_dist(data, idx_list):
 
 
 def check_dist(data_1, data_2, idx_list_1, idx_list_2, flag):
+    # 检查两个数据集在指定索引列表下的标签分布是否一致
     label_dist_1 = get_dist(data_1, idx_list_1)
     label_dist_2 = get_dist(data_2, idx_list_2)
     for keys in label_dist_2:
