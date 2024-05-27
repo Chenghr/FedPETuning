@@ -49,13 +49,11 @@ class BaseModels(nn.Module, ABC):
         raise NotImplementedError
 
     def _add_permutate_layers(self, backbone):
-        # 添加排列层的方法，用于实现层排列功能
         # TODO：当前只支持 BERT-NLU (自然语言理解)任务
         bert_modules = self.get_bert_module(backbone)
         old_modules = bert_modules.encoder.layer
         scrambled_modules = torch.nn.ModuleList()
 
-        # 根据排列顺序创建新的模块列表
         if self.rank > 0:
             permutation = self.model_config.client_model_layers
         else:
@@ -65,7 +63,6 @@ class BaseModels(nn.Module, ABC):
             assert i <= 11, permutation
             scrambled_modules.append(old_modules[i])
 
-        # 创建模型的副本并使用新的模块列表修改它
         backbone_copy = copy.deepcopy(backbone)
         bert_modules_copy = self.get_bert_module(backbone_copy)
         bert_modules_copy.encoder.layer = scrambled_modules
@@ -85,7 +82,6 @@ class BaseModels(nn.Module, ABC):
         return backbone
 
     def forward(self, inputs):
-        # 前向传播方法，需要子类实现
         raise NotImplementedError
 
     def get_bert_module(self, backbone):
@@ -96,5 +92,7 @@ class BaseModels(nn.Module, ABC):
             return backbone.roberta
         elif self.model_config.model_type == "distilbert":
             return backbone.distilbert
+        elif self.model_config.model.type == "llama":
+            return backbone.llama
         else:
             raise NotImplementedError

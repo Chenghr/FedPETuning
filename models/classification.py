@@ -5,8 +5,7 @@ from abc import ABC
 import torch
 from utils import registry
 from models.base_models import BaseModels
-from transformers import AutoModelForTokenClassification, AutoModelForSequenceClassification
-from transformers import RobertaForTokenClassification, trainer
+from transformers import AutoModelForTokenClassification, AutoModelForSequenceClassification, LlamaForSequenceClassification
 
 
 @registry.register_model("seq_classification")
@@ -19,6 +18,7 @@ class SeqClassification(BaseModels, ABC):
         self.backbone = self._build_model()
 
     def _add_base_model(self):
+        # check whether AutoModelForSequenceClassification support llama.
         backbone = AutoModelForSequenceClassification.from_pretrained(
             self.model_config.model_name_or_path,
             from_tf=bool(".ckpt" in self.model_config.model_name_or_path),
@@ -64,3 +64,7 @@ class TokenClassification(BaseModels, ABC):
     def forward(self, inputs):
         output = self.backbone(**inputs)
         return output
+
+
+if __name__ == "__main__":
+    pass

@@ -35,12 +35,11 @@ class BaseTrainer(ABC):
         else:
             return "centralized"
 
-    # 定义建立服务器的方法，具体实现需要在子类中完成
     def _build_server(self):
         raise NotImplementedError
 
-    # 定义建立客户端的方法，具体实现需要在子类中完成
     def _build_client(self):
+        # construct self.client_trainer and self.client_manager here.
         raise NotImplementedError
 
     # 定义建立本地训练器的方法，具体实现需要在子类中完成
@@ -73,7 +72,7 @@ class BaseTrainer(ABC):
 
         # 构建数据和模型
         self.logger.info(f"{self.role} building dataset ...")
-        self._build_data()
+        self._build_data()  # 报错
 
         self.logger.info(f"{self.role} building model ...")
         self._build_model()
@@ -95,22 +94,18 @@ class BaseTrainer(ABC):
             else:
                 self.logger.info("building centralized training")
 
-    # 定义训练方法，具体实现依赖于role
     def train(self):
         if self.federated_config.rank == 0:
-            # 服务器端开始训练
             self.logger.debug(f"Server Start ...")
             self.server_manger.run()
             self.on_server_end()
 
         elif self.federated_config.rank > 0:
-            # 子服务器开始训练
             self.logger.debug(f"Sub-Server {self.federated_config.rank} Training Start ...")
             self.client_manager.run()
             self.on_client_end()
 
         else:
-            # 集中式训练开始
             self.logger.debug(f"Centralized Training Start ...")
             self.client_trainer.cen_train()
             self.on_client_end()

@@ -198,7 +198,7 @@ all_delta_config = {
                     "lora_alpha": 8,
                     "lora_r": 8,
                     "non_linearity": "gelu_new",
-                    "num_train_epochs": 80,
+                    "num_train_epochs": 3,
                     "per_device_eval_batch_size": 100,
                     "per_device_train_batch_size": 32,
                     "unfrozen_modules": [

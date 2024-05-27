@@ -83,4 +83,7 @@ class ModelArguments:
     )
 
     def __post_init__(self):
-        ...
+        legal_model_types = ['roberta', 'llama']
+    
+        if self.model_type not in legal_model_types:
+            raise ValueError(f"The model_type must be one of {legal_model_types}, but '{self.model_type}' found")

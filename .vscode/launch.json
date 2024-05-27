@@ -56,9 +56,6 @@
 
                 // federated config
                 "--fl_algorithm", "centralized",
-                // "--port", "8080",
-                // "--rank", "-1",
-                // "--world_size", "3", 
                 "--rounds", "3",
                 "--test_rounds", "true",
 
@@ -76,7 +73,7 @@
                 // "--learning_rate", "0.001",
                 // other config
                 "--output_dir", "./output/fedglue",
-                "--seed", "1", 
+                // "--seed", "1", 
             ],
             // The code is not customized for multi-GPU scenarios
             "env": {"CUDA_VISIBLE_DEVICES": "0"}
