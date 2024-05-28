@@ -5,7 +5,10 @@ from transformers import TrainingArguments
 
 @dataclass
 class TrainArguments(TrainingArguments):
+    # tuning type config
 
+
+    # training config
     do_reuse: bool = field(
         default=False, metadata={"help": "whether to load last checkpoint"}
     )

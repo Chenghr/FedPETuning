@@ -8,6 +8,16 @@ from models.utils import PromptType
 import torch
 import torch.nn as nn
 from transformers import AutoConfig
+from peft import (
+    get_peft_config,
+    get_peft_model,
+    get_peft_model_state_dict,
+    set_peft_model_state_dict,
+    LoraConfig,
+    PeftType,
+    PrefixTuningConfig,
+    PromptEncoderConfig,
+)
 
 from opendelta import AutoDeltaConfig
 from opendelta.auto_delta import AutoDeltaModel
@@ -80,6 +90,10 @@ class BaseModels(nn.Module, ABC):
             delta_model.freeze_module(set_state_dict=True)
 
         return backbone
+    
+    def _get_peft_model(self, backbone):
+        pass
+
 
     def forward(self, inputs):
         raise NotImplementedError

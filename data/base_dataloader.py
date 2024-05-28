@@ -204,31 +204,26 @@ class BaseDataLoader(ABC):
         return dataloader
 
     def _build_tokenizer(self):
-        tokenizer_settings = {
-            "use_fast": True,
-            "revision": self.model_config.model_revision,
-            "use_auth_token": True if self.model_config.use_auth_token else None
-        }
-
-        # Support for llama-7b with specific tokenizer adjustments
-        if self.model_config.model_type in {"bloom", "gpt2", "roberta"}:
-            tokenizer_settings.update({
-                "add_prefix_space": True if self.model_config.model_type in {"roberta"} else False
-            })
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_config.model_name_or_path,
-                **tokenizer_settings
-            )
-        elif self.model_config.model_type == "llama":
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_config.model_name_or_path,
-                use_fast=False,
-            )
+        if any(k in self.model_config.model_name_or_path for k in ("gpt", "opt", "bloom")):
+            padding_side = "left"
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_config.model_name_or_path,
-                **tokenizer_settings
-            )
+            padding_side = "right"
+
+        tokenizer_settings = {
+            "use_fast": False if "llama" in self.model_config.model_name_or_path else True,
+            "revision": self.model_config.model_revision,
+            "use_auth_token": True if self.model_config.use_auth_token else None,
+            "add_prefix_space": True if "roberta" in self.model_config.model_name_or_path else False,
+            "padding_side": padding_side,
+        }
+    
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_config.model_name_or_path,
+            **tokenizer_settings
+        )
+        
+        if getattr(self.tokenizer, "pad_token_id") is None:
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
     @property
     def cached_data_file(self):
