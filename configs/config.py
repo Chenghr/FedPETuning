@@ -106,7 +106,8 @@ class Config(ABC):
         else:
             # delta_args is a dictionary. 
             # Fine-tuning training parameters can be obtained through the task name.
-            delta_args = get_delta_config(self.model_config.tuning_type)    
+            key = self.training_config.tuning_type
+            delta_args = get_delta_config(key)    
             delta_config = delta_args.get(self.data_config.task_name, delta_args)   
         
         if self.training_config.do_grid:

@@ -31,6 +31,7 @@ class BaseModels(nn.Module, ABC):
 
         config = registry.get("config")
         self.model_config = config.model_config
+        self.training_config = config.training_config
         self.rank = config.federated_config.rank
         self.logger = registry.get("logger")
 
@@ -50,7 +51,7 @@ class BaseModels(nn.Module, ABC):
         if getattr(self.model_config, "permutation_layers", None):
             backbone = self._add_permutate_layers(backbone)
 
-        if self.model_config.tuning_type:
+        if self.training_config.tuning_type:
             backbone = self._add_delta_model(backbone)
 
         return backbone
@@ -80,11 +81,11 @@ class BaseModels(nn.Module, ABC):
 
     def _add_delta_model(self, backbone):
         # 基于 opendelta 库中的 AutoDeltaConfig 类以及 AutoDeltaModel 实现 PEFT 方法
-        if any([True for PType in PromptType if PType in self.model_config.tuning_type]):
+        if any([True for PType in PromptType if PType in self.training_config.tuning_type]):
             # 如果在配置中指定了前缀调优，可能在 OpenDelta 中
             ...
         else:
-            delta_args = registry.get("delta_config")
+            delta_args = registry.get("peft_config")
             delta_config = AutoDeltaConfig.from_dict(delta_args)
             delta_model = AutoDeltaModel.from_config(delta_config, backbone_model=backbone)
             delta_model.freeze_module(set_state_dict=True)

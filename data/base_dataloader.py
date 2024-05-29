@@ -180,7 +180,7 @@ class BaseDataLoader(ABC):
         all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
         all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
 
-        if self.model_config.model_type not in ["distilbert", "roberta", "llama"]:
+        if self.model_config.model_type not in ["distilbert", "roberta-base", "llama"]:
             all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
         else:
             # distilbert and roberta don't have token_type_ids
@@ -191,7 +191,7 @@ class BaseDataLoader(ABC):
         else:
             all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
 
-        if self.model_config.tuning_type and "prompt" in self.model_config.tuning_type:
+        if self.training_config.tuning_type and "prompt" in self.training_config.tuning_type:
             # 针对 prompt-tuning 提供特殊的初始化逻辑
             all_loss_ids = torch.tensor([f.loss_ids for f in features], dtype=torch.float)
             dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels, all_loss_ids)

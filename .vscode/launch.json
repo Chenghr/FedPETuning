@@ -20,11 +20,12 @@
                 "--max_seq_length", "128",
                 // federated config
                 "--fl_algorithm", "centralized",
+                "--rank", "-1",
                 "--pson", "true",
                 "--test_rounds", "true",
                 // models config
                 "--model_name_or_path", "./pretrain/nlp/roberta-base/",
-                "--model_type", "roberta",
+                "--model_type", "roberta-base",
                 "--model_output_mode", "seq_classification", 
                 "--tuning_type", "lora_roberta-base", 
                 "--lora_alpha", "16", 

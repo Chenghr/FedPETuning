@@ -12,7 +12,7 @@ from transformers import HfArgumentParser
 from utils import make_sure_dirs, rm_file
 from utils.register import registry
 from configs import ModelArguments, DataTrainingArguments, TrainArguments, FederatedTrainingArguments
-from configs.tuning import get_delta_config, get_delta_key
+from configs.saved_configs.tuning import get_delta_config, get_delta_key
 
 grid_hyper_parameters = ["tuning_type", "prefix_token_num", "prefix_token_num", "bottleneck_dim",
                          "learning_rate", "dataset_name", "metric_name", "model_output_mode", "seed", 

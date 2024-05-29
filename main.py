@@ -33,6 +33,6 @@ if __name__ == "__main__":
     """该部分代码定义了联邦学习调优（FedETuning）的执行流程，
         包括初始化设置、读取配置、获取指定的联邦学习算法，并执行训练过程。
     """
-    # main()
-    test_dataloader()
+    main()
+    # test_dataloader()
     
