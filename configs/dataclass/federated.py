@@ -62,12 +62,23 @@ class FederatedTrainingArguments:
     )
 
     def __post_init__(self):
-        if self.alpha is None:
-            # IID
+        if self.alpha is None:  # IID 
             self.alpha = "inf"
 
         if not self.do_mimic:
             print("Please check whether federated device has its own data")
+
+        if "cen" in self.fl_algorithm:
+            if self.rank == -1:
+                self.world_size = 1
+            else:
+                raise ValueError(f"Must set world_size, but find {self.world_size}")
+        else:
+            if self.clients_num % (self.world_size - 1) != 0:
+                raise ValueError(f"{self.clients_num} % {self.world_size - 1} != 0")
+
+        if self.partition_method is None:
+            self.partition_method = f"clients={self.clients_num}_alpha={self.alpha}"
 
     @property
     def clients_num_per_sub_server(self):

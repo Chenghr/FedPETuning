@@ -1,7 +1,7 @@
-from configs.models import ModelArguments
-from configs.trainers import TrainingArguments, TrainArguments
-from configs.datasets import DataTrainingArguments
-from configs.federated import FederatedTrainingArguments
+from configs.dataclass.models import ModelArguments
+from configs.dataclass.trainers import TrainingArguments, TrainArguments
+from configs.dataclass.datasets import DataTrainingArguments
+from configs.dataclass.federated import FederatedTrainingArguments
 
 
 __all__ = [

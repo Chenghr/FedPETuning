@@ -19,7 +19,7 @@ from utils.general import (
 )
 from utils.logger import setup_logger
 from utils.loss import Loss
-from utils.config import build_config
+from configs.config import build_config
 from utils.register import registry
 # from utils.transform import ss_tokenize, ms_tokenize
 

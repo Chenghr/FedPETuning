@@ -59,31 +59,5 @@ class ModelArguments:
         default_factory=list,
         metadata={"help": "The client model's size, default=[i for i in range(12)]"},
     )
-
-    # Efficient Model Config
-    tuning_type: str = field(
-        default=None,
-        metadata={"help": "The Efficient Fine-tuning type, support {adapter, prompt, lora, prefix}"}
-    )
-    lora_r: int = field(
-        default=8,
-        metadata={"help": "lora specific parameters"}
-    )
-    lora_alpha: int = field(
-        default=8,
-        metadata={"help": "lora specific parameters"}
-    )
-    prefix_token_num: int = field(
-        default=16,
-        metadata={"help": "prefix-tuning specific parameters"}
-    )
-    bottleneck_dim: int = field(
-        default=64,
-        metadata={"help": "adapter specific parameters"}
-    )
-
-    def __post_init__(self):
-        legal_model_types = ['roberta', 'llama']
     
-        if self.model_type not in legal_model_types:
-            raise ValueError(f"The model_type must be one of {legal_model_types}, but '{self.model_type}' found")
+    
