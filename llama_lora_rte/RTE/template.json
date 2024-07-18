@@ -1,0 +1,6 @@
+{
+    "description": "Template used for Recognizing Textual Entailment (RTE) tasks in LLama2, , where the goal is to determine whether a hypothesis entails, contradicts, or is neutral with respect to a given premise.",
+    "prompt_input": "### Premise:\n{instruction}\n\n### Hypothesis:\n{input}\n\nDoes the hypothesis entail the premise?\n\n### Response:\n",
+    "prompt_no_input": "",
+    "response_split": "### Response:"    
+}

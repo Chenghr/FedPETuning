@@ -47,37 +47,22 @@ class BaseModels(nn.Module, ABC):
 
     def _build_model(self):
         backbone = self._add_base_model()
+        # if getattr(self.model_config, "permutation_layers", None):
+        #     backbone = self._add_permutate_layers(backbone)
 
-        if getattr(self.model_config, "permutation_layers", None):
-            backbone = self._add_permutate_layers(backbone)
-
-        if self.training_config.tuning_type:
-            backbone = self._add_delta_model(backbone)
+        if self.training_config.tuning_library == "opendelta":
+            if self.training_config.tuning_type:
+                backbone = self._add_delta_model(backbone)
+        else:
+            backbone = self._add_peft_model(backbone)
 
         return backbone
+    
+    def forward(self, inputs):
+        raise NotImplementedError
 
     def _add_base_model(self):
         raise NotImplementedError
-
-    def _add_permutate_layers(self, backbone):
-        # TODO：当前只支持 BERT-NLU (自然语言理解)任务
-        bert_modules = self.get_bert_module(backbone)
-        old_modules = bert_modules.encoder.layer
-        scrambled_modules = torch.nn.ModuleList()
-
-        if self.rank > 0:
-            permutation = self.model_config.client_model_layers
-        else:
-            permutation = self.model_config.server_model_layers
-        self.logger.debug(f"model's layer: {permutation}")
-        for i in permutation:
-            assert i <= 11, permutation
-            scrambled_modules.append(old_modules[i])
-
-        backbone_copy = copy.deepcopy(backbone)
-        bert_modules_copy = self.get_bert_module(backbone_copy)
-        bert_modules_copy.encoder.layer = scrambled_modules
-        return backbone_copy
 
     def _add_delta_model(self, backbone):
         # 基于 opendelta 库中的 AutoDeltaConfig 类以及 AutoDeltaModel 实现 PEFT 方法
@@ -92,14 +77,34 @@ class BaseModels(nn.Module, ABC):
 
         return backbone
     
-    def _get_peft_model(self, backbone):
-        pass
+    def _add_peft_model(self, backbone):
+        peft_config = self.training_config.peft_config
+        backbone = get_peft_model(backbone, peft_config)
+        backbone.print_trainable_parameters()
 
+        return backbone
+    
+    def _add_permutate_layers(self, backbone):
+        # TODO：当前只支持 BERT-NLU (自然语言理解)任务
+        bert_modules = self._get_bert_module(backbone)
+        old_modules = bert_modules.encoder.layer
+        scrambled_modules = torch.nn.ModuleList()
 
-    def forward(self, inputs):
-        raise NotImplementedError
+        if self.rank > 0:
+            permutation = self.model_config.client_model_layers
+        else:
+            permutation = self.model_config.server_model_layers
+        self.logger.debug(f"model's layer: {permutation}")
+        for i in permutation:
+            assert i <= 11, permutation
+            scrambled_modules.append(old_modules[i])
 
-    def get_bert_module(self, backbone):
+        backbone_copy = copy.deepcopy(backbone)
+        bert_modules_copy = self._get_bert_module(backbone_copy)
+        bert_modules_copy.encoder.layer = scrambled_modules
+        return backbone_copy
+
+    def _get_bert_module(self, backbone):
         # 获取 BERT 模块的方法
         if self.model_config.model_type == "bert":
             return backbone.bert

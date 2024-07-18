@@ -1,9 +1,10 @@
 """main for FedETuning"""
-
+import os
 from utils import registry
 from utils import build_config
 from utils import setup_logger, setup_imports
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 def test_dataloader():
     setup_imports()

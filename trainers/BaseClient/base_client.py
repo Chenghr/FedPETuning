@@ -5,8 +5,9 @@ from typing import List
 
 import torch
 from thop import clever_format, profile
-from transformers import get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup, AutoTokenizer
 from torch.optim import AdamW
+from calflops import calculate_flops
 
 from fedlab.core.client.manager import (ORDINARY_TRAINER, SERIAL_TRAINER,
                                         PassiveClientManager)
@@ -62,15 +63,40 @@ class BaseClientTrainer(ClientTrainer, ABC):
             self._calculate_model_computation()
 
     def _calculate_model_computation(self):
-
+        
         dummy_idx = list(self.train_dataset.keys())[0]
         train_loader = self._get_dataloader(dataset=self.train_dataset, client_id=dummy_idx)
         for step, batch in enumerate(train_loader):
             self._model.train()
             batch = tuple(t.to(self.device) for t in batch)
 
-            macs, params = profile(self._model.backbone, inputs=(batch[0],))
-            flops, params = clever_format([macs, params], "%.3f")
+            if self.training_config.tuning_library == "opendelta":
+                macs, params = profile(self._model.backbone, inputs=(batch[0],))
+                flops, params = clever_format([macs, params], "%.3f")
+            else:
+                if any(k in self.model_config.model_name_or_path for k in ("gpt", "opt", "bloom")):
+                    padding_side = "left"
+                else:
+                    padding_side = "right"
+
+                tokenizer_settings = {
+                    "use_fast": False if "llama" in self.model_config.model_name_or_path else True,
+                    "revision": self.model_config.model_revision,
+                    "use_auth_token": True if self.model_config.use_auth_token else None,
+                    "add_prefix_space": True if "roberta" in self.model_config.model_name_or_path else False,
+                    "padding_side": padding_side,
+                }
+                tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_config.model_name_or_path,
+                    **tokenizer_settings
+                )
+                flops, macs, params = calculate_flops(
+                        model=self._model.backbone,
+                        input_shape=(self.training_config.train_batch_size, self.data_config.max_seq_length),
+                        transformer_tokenizer=tokenizer,
+                        print_results=False
+                    )
+
             self.logger.debug(f"Model Type: {self.model_config.model_type}, "
                               f"Tuning Type: {self.training_config.tuning_type}, "
                               f"Parameters: {get_parameter_number(self._model.backbone)}, "

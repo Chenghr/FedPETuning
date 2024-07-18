@@ -1,7 +1,11 @@
 # Customize
 data/fedglue
+data/glue_data
 pretrain/
 output/
+lora-alpaca/
+llama_lora_rte/output
+llama_lora_rte/experiments
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

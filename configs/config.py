@@ -43,6 +43,7 @@ class Config(ABC):
         else:
             raise ValueError(f"Not support tuning library {self.T.tuning_library}")
         
+        self.training_config.peft_config = peft_config
         registry.register("peft_config", peft_config)
 
     def overwrite_configs(self):
@@ -127,17 +128,17 @@ class Config(ABC):
     
     def _get_peft_config(self):
         # TODO: check here.
-        if self.M.peft_tuning_type == PeftType.LORA:
+        if self.T.peft_tuning_type == PeftType.LORA:
             peft_config = LoraConfig(
                 task_type="SEQ_CLS" if self.M.model_output_mode == "seq_classification" else "TOKEN_CLS",
                 inference_mode=False, 
-                r=self.M.lora_r, 
-                lora_alpha=self.M.lora_alpha, 
-                lora_dropout=self.M.lora_dropout
+                r=self.T.lora_r, 
+                lora_alpha=self.T.lora_alpha, 
+                lora_dropout=self.T.lora_dropout
             )
         else:
-            raise ValueError(f"Not supported peft tuning type {self.M.peft_tuning_type}")
-
+            raise ValueError(f"Not supported peft tuning type {self.T.peft_tuning_type}")
+        
         return peft_config
     
     def _overwrite_configs_from_peft_config(self):

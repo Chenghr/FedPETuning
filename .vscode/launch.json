@@ -8,7 +8,7 @@
             "name": "Debug: centralized-roberta",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "main.py", // ${file}
             "console": "integratedTerminal",
             "python": "${command:python.interpreterPath}",
             "args": [
@@ -44,7 +44,7 @@
             "name": "Debug: centralized-llama",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "main.py",
             "console": "integratedTerminal",
             "python": "${command:python.interpreterPath}",
             "args": [
@@ -57,6 +57,7 @@
 
                 // federated config
                 "--fl_algorithm", "centralized",
+                "--rank", "-1",
                 "--rounds", "3",
                 "--test_rounds", "true",
 
@@ -64,12 +65,13 @@
                 "--model_name_or_path", "./pretrain/nlp/llama/llama-7b",
                 "--model_type", "llama",
                 "--model_output_mode", "seq_classification", 
-                "--tuning_type", "lora_llama", 
-                // "--lora_r", "16",
-                "--lora_alpha", "16", 
 
                 // trainers config
                 // "--metric_name", "glue",
+                "--tuning_library", "peft",
+                "--tuning_type", "lora_llama",
+                "--lora_r", "8",
+                "--lora_alpha", "8", 
                 "--do_grid", "False",
                 // "--learning_rate", "0.001",
                 // other config

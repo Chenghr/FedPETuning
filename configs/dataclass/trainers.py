@@ -61,7 +61,7 @@ class TrainArguments(TrainingArguments):
     )
 
     def __post_init__(self): 
-        if self.tuning_library is "peft":
+        if self.tuning_library == "peft":
             if "lora" in self.tuning_type:
                 self.peft_tuning_type = PeftType.LORA
             elif  "prefix" in self.tuning_type:

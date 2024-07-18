@@ -1,0 +1,6 @@
+{
+    "description": "This template is for Recognizing Textual Entailment (RTE) tasks, where the goal is to determine whether a hypothesis entails, contradicts, or is neutral with respect to a given premise.",
+    "prompt_input": "Premise: {instruction}\nHypothesis: {input}\nDoes the hypothesis entail the premise? Answer: {label}",
+    "prompt_no_input": "",
+    "response_split": "Answer:"
+}

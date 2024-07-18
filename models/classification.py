@@ -19,19 +19,40 @@ class SeqClassification(BaseModels, ABC):
 
     def _add_base_model(self):
         # check whether AutoModelForSequenceClassification support llama.
-        backbone = AutoModelForSequenceClassification.from_pretrained(
-            self.model_config.model_name_or_path,
-            from_tf=bool(".ckpt" in self.model_config.model_name_or_path),
-            config=self.auto_config,
-            # cache_dir=self.model_config.cache_dir,
-            revision=self.model_config.model_revision,
-            use_auth_token=True if self.model_config.use_auth_token else None,
-            # ignore_mismatched_sizes=self.model_config.ignore_mismatched_sizes,
-        )
+        if self.model_config.model_type and "llama" in self.model_config.model_type:
+            backbone = AutoModelForSequenceClassification.from_pretrained(
+                self.model_config.model_name_or_path, 
+                config=self.auto_config,
+                revision=self.model_config.model_revision,
+                use_auth_token=True if self.model_config.use_auth_token else None,
+            )
+        else:
+            backbone = AutoModelForSequenceClassification.from_pretrained(
+                self.model_config.model_name_or_path,
+                from_tf=bool(".ckpt" in self.model_config.model_name_or_path),
+                config=self.auto_config,
+                # cache_dir=self.model_config.cache_dir,
+                revision=self.model_config.model_revision,
+                use_auth_token=True if self.model_config.use_auth_token else None,
+                # ignore_mismatched_sizes=self.model_config.ignore_mismatched_sizes,
+            )
         return backbone
 
     def forward(self, inputs):
-        output = self.backbone(**inputs)
+        print(inputs.keys())
+        if self.model_config.model_type in ["llama"]:
+            inputs.pop("token_type_ids", None)
+        print(f"input_ids shape: {inputs['input_ids'].shape}")
+        print(f"attention_mask shape: {inputs['attention_mask'].shape}")
+        print(f"labels shape: {inputs['labels'].shape}")
+
+        # 数组索引越界
+        # output = self.backbone(**inputs)
+        output = self.backbone(
+            input_ids=inputs['input_ids'],
+            attention_mask=inputs['attention_mask'],
+            labels=inputs['labels'],
+            )
         return output
 
 

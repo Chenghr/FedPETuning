@@ -6,7 +6,7 @@ from abc import ABC
 import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, LlamaTokenizer
 
 from utils import check_cached_data, pickle_read, pickle_write, registry
 
@@ -204,26 +204,31 @@ class BaseDataLoader(ABC):
         return dataloader
 
     def _build_tokenizer(self):
-        if any(k in self.model_config.model_name_or_path for k in ("gpt", "opt", "bloom")):
-            padding_side = "left"
-        else:
-            padding_side = "right"
+        if "llama" in self.model_config.model_name_or_path:
+            self.tokenizer = LlamaTokenizer.from_pretrained(self.model_config.model_name_or_path)
 
-        tokenizer_settings = {
-            "use_fast": False if "llama" in self.model_config.model_name_or_path else True,
-            "revision": self.model_config.model_revision,
-            "use_auth_token": True if self.model_config.use_auth_token else None,
-            "add_prefix_space": True if "roberta" in self.model_config.model_name_or_path else False,
-            "padding_side": padding_side,
-        }
-    
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_config.model_name_or_path,
-            **tokenizer_settings
-        )
-        
-        if getattr(self.tokenizer, "pad_token_id") is None:
-            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        else:
+            if any(k in self.model_config.model_name_or_path for k in ("gpt", "opt", "bloom", "llama")):
+                padding_side = "left"
+            else:
+                padding_side = "right"
+
+            tokenizer_settings = {
+                "use_fast": False if "llama" in self.model_config.model_name_or_path else True,
+                "revision": self.model_config.model_revision,
+                "use_auth_token": True if self.model_config.use_auth_token else None,
+                "add_prefix_space": True if "roberta" in self.model_config.model_name_or_path else False,
+                "padding_side": padding_side,
+            }
+            
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_config.model_name_or_path,
+                **tokenizer_settings
+            )
+            
+            if getattr(self.tokenizer, "pad_token_id") is None:
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        print(self.tokenizer.vocab_size)
 
     @property
     def cached_data_file(self):
